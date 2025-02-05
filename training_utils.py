@@ -68,3 +68,24 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
     torch.save(model.state_dict(), save_path)
 
     return train_losses, train_accuracies, test_losses, test_accuracies
+
+
+import torch
+import torch.nn as nn
+import torchvision.models as models
+
+def upload_pretrained(pretrained_model, add_layers=True, n_labels=5, freeze_layers=True):
+    if freeze_layers:
+        for param in pretrained_model.parameters():
+            param.requires_grad = False
+
+
+    if add_layers:
+        pretrained_model.fc = nn.Sequential(
+            nn.Linear(pretrained_model.fc.in_features, 16),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(16, n_labels)
+        )
+
+    return pretrained_model
