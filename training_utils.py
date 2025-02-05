@@ -31,9 +31,10 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
             optimizer.step()
 
             # Accuracy and loss calculation
-            _, predicted = torch.max(outputs, 1)
+            predicted = (torch.sigmoid(outputs) > 0.5).float()
+            # Calculate accuracy per sample (averaged over labels)
+            correct_train += (predicted == labels).sum().item() / labels.size(1)
             total_train += labels.size(0)
-            correct_train += (predicted == labels).sum().item()
             train_loss += loss.item()
 
         # Store the average metrics for this epoch
@@ -52,9 +53,9 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
                 inputs, labels = inputs.to(device), labels.to(device)
                 
                 outputs = model(inputs)
-                _, predicted = torch.max(outputs, 1)
+                predicted = (torch.sigmoid(outputs) > 0.5).float()
                 total_test += labels.size(0)
-                correct_test += (predicted == labels).sum().item()
+                correct_test += (predicted == labels).sum().item() / labels.size(1)
                 test_loss += criterion(outputs, labels).item()
 
         test_accuracy = correct_test / total_test
