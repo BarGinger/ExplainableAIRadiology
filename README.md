@@ -5,7 +5,7 @@
  # Students
  1. Bar Melinarskiy - 2482975
  2. Nikita Aksjonov - ?
- 3. Konstantinos Zavantias - ?
+ 3. Konstantinos Zavantias - 7456123
  4. Abhinav Atmuri - ?
 
 # How to run the project
