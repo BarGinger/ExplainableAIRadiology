@@ -1,6 +1,9 @@
 import os
 import torch
 from torch.utils.data import DataLoader
+import torch
+import torch.nn as nn
+import torchvision.models as models
 
 def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criterion, optimizer, num_epochs=5, save_filename='model.pth', device='cuda'):
 
@@ -71,9 +74,6 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
     return train_losses, train_accuracies, test_losses, test_accuracies
 
 
-import torch
-import torch.nn as nn
-import torchvision.models as models
 
 def upload_pretrained(pretrained_model, add_layers=True, n_labels=5, freeze_layers=True):
     if freeze_layers:
@@ -90,3 +90,27 @@ def upload_pretrained(pretrained_model, add_layers=True, n_labels=5, freeze_laye
         )
 
     return pretrained_model
+
+
+
+
+def upload_pretrained_vit(vit_model, add_layers=True, n_labels=5, freeze_layers=True):
+    if freeze_layers:
+        for param in vit_model.parameters():
+            param.requires_grad = False
+            
+    if add_layers:
+        # Access the first module inside the Sequential container to get in_features
+        if isinstance(vit_model.heads, nn.Sequential):
+            in_features = vit_model.heads[0].in_features
+        else:
+            in_features = vit_model.heads.in_features
+
+        vit_model.heads = nn.Sequential(
+            nn.Linear(in_features, 16),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(16, n_labels)
+        )
+    
+    return vit_model
