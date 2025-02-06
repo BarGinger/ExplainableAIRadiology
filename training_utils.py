@@ -1,12 +1,30 @@
 import os
 import torch
 from torch.utils.data import DataLoader
-import torch
 import torch.nn as nn
 import torchvision.models as models
+from tqdm.notebook import tqdm
 
 def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criterion, optimizer, num_epochs=5, save_filename='model.pth', device='cuda'):
+    """
+    Train a PyTorch model with the given parameters.
 
+    Parameters:
+    - model: The PyTorch model to be trained.
+    - train_loader: DataLoader for the training dataset.
+    - test_loader: DataLoader for the validation dataset.
+    - criterion: The loss function.
+    - optimizer: The optimizer.
+    - num_epochs: Number of epochs to train the model.
+    - save_filename: Filename to save the trained model.
+    - device: Device to train the model on ('cpu' or 'cuda').
+
+    Returns:
+    - train_losses: List of training losses for each epoch.
+    - train_accuracies: List of training accuracies for each epoch.
+    - test_losses: List of validation losses for each epoch.
+    - test_accuracies: List of validation accuracies for each epoch.
+    """
     model.to(device)
 
     current_dir = os.getcwd()
@@ -23,22 +41,25 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
         correct_train = 0
         train_loss = 0.0
 
+        # Add a progress bar for the training loop
+        with tqdm(total=len(train_loader), desc=f"Epoch {epoch+1}/{num_epochs}", unit="batch") as pbar:
+            for inputs, labels in train_loader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
 
-        for inputs, labels in train_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+                # Accuracy and loss calculation
+                predicted = (torch.sigmoid(outputs) > 0.5).float()
+                # Calculate accuracy per sample (averaged over labels)
+                correct_train += (predicted == labels).sum().item() / labels.size(1)
+                total_train += labels.size(0)
+                train_loss += loss.item()
 
-            # Accuracy and loss calculation
-            predicted = (torch.sigmoid(outputs) > 0.5).float()
-            # Calculate accuracy per sample (averaged over labels)
-            correct_train += (predicted == labels).sum().item() / labels.size(1)
-            total_train += labels.size(0)
-            train_loss += loss.item()
+                pbar.update(1)
 
         # Store the average metrics for this epoch
         train_accuracy = correct_train / total_train
@@ -73,13 +94,22 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
 
     return train_losses, train_accuracies, test_losses, test_accuracies
 
-
-
 def upload_pretrained(pretrained_model, add_layers=True, n_labels=5, freeze_layers=True):
+    """
+    Modify a pre-trained model by adding custom layers and optionally freezing the original layers.
+
+    Parameters:
+    - pretrained_model: The pre-trained model to be modified.
+    - add_layers: Boolean indicating whether to add custom layers.
+    - n_labels: Number of output labels (classes).
+    - freeze_layers: Boolean indicating whether to freeze the original layers.
+
+    Returns:
+    - The modified model.
+    """
     if freeze_layers:
         for param in pretrained_model.parameters():
             param.requires_grad = False
-
 
     if add_layers:
         pretrained_model.fc = nn.Sequential(
@@ -91,10 +121,19 @@ def upload_pretrained(pretrained_model, add_layers=True, n_labels=5, freeze_laye
 
     return pretrained_model
 
-
-
-
 def upload_pretrained_vit(vit_model, add_layers=True, n_labels=5, freeze_layers=True):
+    """
+    Modify a pre-trained Vision Transformer (ViT) model by adding custom layers and optionally freezing the original layers.
+
+    Parameters:
+    - vit_model: The pre-trained ViT model to be modified.
+    - add_layers: Boolean indicating whether to add custom layers.
+    - n_labels: Number of output labels (classes).
+    - freeze_layers: Boolean indicating whether to freeze the original layers.
+
+    Returns:
+    - The modified ViT model.
+    """
     if freeze_layers:
         for param in vit_model.parameters():
             param.requires_grad = False

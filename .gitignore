@@ -4,7 +4,4 @@
 .rdb
 *.rdb
 
-Data/*
-/Data
-
 /CheXpert-v1.0-small
