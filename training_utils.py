@@ -155,3 +155,21 @@ def upload_pretrained_vit(vit_model, add_layers=True, n_labels=5, freeze_layers=
         )
     
     return vit_model
+
+def upload_pretrained_densenet121(pretrained_model, add_layers=True, n_labels=1, freeze_layers=True):
+    if freeze_layers:
+        for param in pretrained_model.parameters():
+            param.requires_grad = False
+
+    if add_layers:
+        in_features = pretrained_model.classifier.in_features
+        pretrained_model.classifier = nn.Sequential(
+            nn.Linear(in_features, 16),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(16, n_labels)
+        )
+
+    return pretrained_model
+
+
