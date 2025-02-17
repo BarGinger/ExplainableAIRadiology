@@ -18,6 +18,7 @@ class CheXpertDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.dataframe.iloc[idx]['path']
+        #         img_path = "/content/drive/MyDrive/" + img_path
         image = Image.open(img_path).convert('RGB')  #rgb format
         labels = self.dataframe.iloc[idx][self.class_names].values.astype('float32')  # astype float32 otherwise error
         labels = torch.tensor(labels, dtype=torch.float32)
