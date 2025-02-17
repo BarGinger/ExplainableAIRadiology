@@ -96,7 +96,7 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
 
     return train_losses, train_accuracies, test_losses, test_accuracies
 
-def upload_pretrained(pretrained_model, add_layers=True, n_labels=5, freeze_layers=True):
+def upload_pretrained(pretrained_model, add_layers=True, n_labels=1, freeze_layers=True):
     """
     Modify a pre-trained model by adding custom layers and optionally freezing the original layers.
 
