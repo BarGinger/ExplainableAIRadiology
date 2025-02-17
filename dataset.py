@@ -25,7 +25,7 @@ class CheXpertDataset(Dataset):
         elif os.path.exists('/content/drive/MyDrive'):
           FOLDER = '/content/drive/MyDrive/CheXpert-v1.0-small/'
         else:
-          FOLDER = "/CheXpert-v1.0-small/" # Or handle the case where the directory doesn't exist
+          FOLDER = "" # Or handle the case where the directory doesn't exist
         img_path = FOLDER + img_path
         image = Image.open(img_path).convert('RGB')  #rgb format
         labels = self.dataframe.iloc[idx][self.class_names].values.astype('float32')  # astype float32 otherwise error
