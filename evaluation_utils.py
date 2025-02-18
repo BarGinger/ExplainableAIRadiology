@@ -43,7 +43,7 @@ def evaluate_model(model, test_loader: DataLoader, criterion, device='cuda'):
             all_labels.append(labels.cpu())
 
             correct += (predicted == labels).sum().item()
-            total += labels.size(0) # Total elements (samples × labels)
+            total += labels.numel() # Total elements (samples × labels)
 
     test_loss /= len(test_loader)
     test_accuracy = correct / total
