@@ -168,13 +168,13 @@ def upload_pretrained_densenet121(pretrained_model, add_layers=True, n_labels=1,
     if add_layers:
         in_features = pretrained_model.classifier.in_features
         pretrained_model.classifier = nn.Sequential(
-            nn.Linear(in_features, 32),
+            nn.Linear(in_features, 64),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(32, 16),
+            nn.Linear(64, 32),
             nn.ReLU(),
             nn.Dropout(0.4),
-            nn.Linear(16, n_labels)
+            nn.Linear(32, n_labels)
         )
 
     return pretrained_model
