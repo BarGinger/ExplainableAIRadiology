@@ -10,6 +10,9 @@ import numpy as np
 from sklearn.metrics import roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 import pickle
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+from preprocessing_utils import get_class_names
 
 
 def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criterion, optimizer, scheduler, num_epochs=5, save_filename='model.pth', device='cuda', patience=5):
@@ -315,3 +318,21 @@ def predict_model(model, loader, device='cuda'):
             all_labels.extend(labels.cpu().numpy())
 
     return np.array(all_preds), np.array(all_labels)
+
+# Function to plot ROC curve
+def plot_roc_curve(labels, preds, model_name):
+    class_names = get_class_names()
+    plt.figure(figsize=(10, 8))
+    for i, class_name in enumerate(class_names):
+        fpr, tpr, _ = roc_curve(labels[:, i], preds[:, i])
+        roc_auc = auc(fpr, tpr)
+        plt.plot(fpr, tpr, lw=2, label=f'{class_name} (AUC = {roc_auc:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--', lw=2)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(f'ROC Curve for model {model_name}')
+    plt.legend(loc='lower right')
+    plt.grid()
+    plt.show()
