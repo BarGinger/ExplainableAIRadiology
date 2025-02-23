@@ -1,6 +1,35 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+import zipfile
+from torchvision import transforms
+from torch.utils.data import Dataset, DataLoader
+from dataset import CheXpertDataset
+
+
+# Global helper functions
+def get_class_names():
+    return [
+        'Pleural Effusion'
+    ]
+
+def get_policies():
+    return [
+        'ones',
+        'zeroes',
+        'mixed'
+    ]
+
+def get_transform():
+    # Define the transformation pipeline for the images
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),  # Resize images to 224x224 pixels
+        transforms.ToTensor(),          # Convert images to PyTorch tensors
+        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize grayscale images
+    ])
+    return transform
+
+# Global preprocessing functions
 
 def prepare_dataset(dataframe, policy, class_names):
     """
@@ -120,3 +149,73 @@ def prepare_test_dataset(valid_df, policy, class_names):
     test_df = pd.concat([test_df, test_labels_df], axis=1)
     
     return test_df
+
+
+def get_datasets(zip_path='chexpert.zip'):
+    """
+    Get the training, validation, and test datasets.
+    """
+    # Read the training and validation data from the zip file
+    original_train_df, test_df = read_zip()
+
+    policies = get_policies()
+    class_names = get_class_names()
+
+    # Split the original training data into separate training 
+    # and validation sets while preserving the original 
+    # validation test set as the final test set.
+    train_df, validation_df = split_train_val(original_train_df, policies[-1], class_names)
+    
+    # Prepare the test dataset
+    test_df = prepare_test_dataset(test_df, policies[-1], class_names)
+
+    return train_df, validation_df, test_df
+
+
+def read_zip(zip_path='chexpert.zip'):
+    """
+    Reading training and validation data from a zip file.
+    """
+    original_train_df, test_df = None, None
+
+    # Read CSV files from the zip file
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        with zip_ref.open('train.csv') as train_file:
+            original_train_df = pd.read_csv(train_file)
+        with zip_ref.open('valid.csv') as valid_file:
+            test_df = pd.read_csv(valid_file)
+    
+    return original_train_df, test_df
+
+
+def tranform_dataset(df, zip_path='chexpert.zip', batch_size=16, shuffle=True):
+    """
+    Transform the dataset into DataLoader objects for given dataframe.
+
+    Parameters:
+    - df: DataFrame containing the dataset.
+    - zip_path: Path to the zip file containing the images.
+    - batch_size: Number of samples in each batch.
+    - shuffle: Whether to shuffle the data.
+
+    Returns:
+    - dataset: CheXpertDataset object containing the dataset.
+    - loader: DataLoader object containing the dataset.
+    - images: Batch of images from the DataLoader.
+    - labels: Batch of labels from the DataLoader.
+    """
+    # Define the class names for the medical conditions
+    class_names = get_class_names()
+
+    transformer = get_transform()
+
+    # Create the training dataset with the defined transformations 
+    dataset = CheXpertDataset(dataframe=df, class_names=class_names, zip_path=zip_path, transform=transformer)
+
+    # Create DataLoader for the training dataset
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+    # Verify data loading by fetching a batch of images and labels from the training DataLoader
+    images, labels = next(iter(loader))
+
+    return dataset, loader, images, labels
