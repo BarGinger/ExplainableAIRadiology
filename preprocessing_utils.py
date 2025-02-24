@@ -147,7 +147,7 @@ def get_datasets(zip_path='chexpert.zip'):
     Get the training, validation, and test datasets.
     """
     # Read the training and validation data from the zip file
-    original_train_df, test_df = read_zip()
+    original_train_df, test_df = read_zip(zip_path=zip_path)
 
     policies = get_policies()
     class_names = get_class_names()
