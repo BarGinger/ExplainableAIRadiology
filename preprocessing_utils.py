@@ -152,13 +152,15 @@ def get_datasets(zip_path='chexpert.zip'):
     policies = get_policies()
     class_names = get_class_names()
 
+    selected_policy = policies[0]
+
     # Split the original training data into separate training 
     # and validation sets while preserving the original 
     # validation test set as the final test set.
-    train_df, validation_df = split_train_val(original_train_df, policies[0], class_names)
+    train_df, validation_df = split_train_val(original_train_df, selected_policy, class_names)
     
     # Prepare the test dataset
-    test_df = prepare_test_dataset(test_df, policies[-1], class_names)
+    test_df = prepare_test_dataset(test_df, selected_policy, class_names)
 
     return train_df, validation_df, test_df
 
