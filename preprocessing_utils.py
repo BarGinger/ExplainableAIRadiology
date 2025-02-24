@@ -20,15 +20,6 @@ def get_policies():
         'mixed'
     ]
 
-def get_transform():
-    # Define the transformation pipeline for the images
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # Resize images to 224x224 pixels
-        transforms.ToTensor(),          # Convert images to PyTorch tensors
-        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize grayscale images
-    ])
-    return transform
-
 # Global preprocessing functions
 
 def prepare_dataset(dataframe, policy, class_names):
@@ -164,7 +155,7 @@ def get_datasets(zip_path='chexpert.zip'):
     # Split the original training data into separate training 
     # and validation sets while preserving the original 
     # validation test set as the final test set.
-    train_df, validation_df = split_train_val(original_train_df, policies[-1], class_names)
+    train_df, validation_df = split_train_val(original_train_df, policies[0], class_names)
     
     # Prepare the test dataset
     test_df = prepare_test_dataset(test_df, policies[-1], class_names)
@@ -188,7 +179,32 @@ def read_zip(zip_path='chexpert.zip'):
     return original_train_df, test_df
 
 
-def tranform_dataset(df, zip_path='chexpert.zip', batch_size=16, shuffle=True):
+def get_transform(augment=False):
+    # Define the transformation pipeline for the images
+    transform_list = [
+        transforms.Resize((224, 224)),  # Resize images to 224x224 pixels
+        transforms.ToTensor(),          # Convert images to PyTorch tensors
+        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize grayscale images
+    ]
+    
+    if augment:
+        # Add data augmentation transformations to help with generalization
+        # RandomHorizontalFlip: Randomly flip the image horizontally
+        # RandomRotation: Randomly rotate the image by up to 10 degrees
+        # RandomResizedCrop: Randomly crop the image to 224x224 pixels
+        # ColorJitter: Randomly change the brightness, contrast, saturation, and hue of the image
+        augmentations = [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(10),
+            transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)
+        ]
+        transform_list = augmentations + transform_list
+    
+    transform = transforms.Compose(transform_list)
+    return transform
+
+def transform_dataset(df, zip_path='chexpert.zip', batch_size=16, shuffle=True, augment=False):
     """
     Transform the dataset into DataLoader objects for given dataframe.
 
@@ -197,6 +213,7 @@ def tranform_dataset(df, zip_path='chexpert.zip', batch_size=16, shuffle=True):
     - zip_path: Path to the zip file containing the images.
     - batch_size: Number of samples in each batch.
     - shuffle: Whether to shuffle the data.
+    - augment: Whether to apply data augmentation.
 
     Returns:
     - dataset: CheXpertDataset object containing the dataset.
@@ -207,7 +224,7 @@ def tranform_dataset(df, zip_path='chexpert.zip', batch_size=16, shuffle=True):
     # Define the class names for the medical conditions
     class_names = get_class_names()
 
-    transformer = get_transform()
+    transformer = get_transform(augment=augment)
 
     # Create the training dataset with the defined transformations 
     dataset = CheXpertDataset(dataframe=df, class_names=class_names, zip_path=zip_path, transform=transformer)

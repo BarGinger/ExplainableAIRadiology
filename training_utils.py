@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from preprocessing_utils import get_class_names
 
 
-def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criterion, optimizer, scheduler, num_epochs=5, save_filename='model.pth', device='cuda', patience=5):
+def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criterion, optimizer, scheduler, num_epochs=5, model_name='model', device='cuda', patience=5):
     """
     Train a PyTorch model with the given parameters.
 
@@ -27,7 +27,7 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
     - optimizer: The optimizer.
     - scheduler: The learning rate scheduler.
     - num_epochs: Number of epochs to train the model.
-    - save_filename: Filename to save the trained model.
+    - model_name: model name to save the trained model.
     - device: Device to train the model on ('cpu' or 'cuda').
     - patience: Number of epochs to wait for improvement before stopping early.
 
@@ -41,6 +41,7 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
     model.to(device)
 
     current_dir = os.getcwd()
+    save_filename = f"{model_name}.pkl"
     save_path = os.path.join(current_dir, save_filename)
 
     train_losses = []
@@ -52,6 +53,7 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
     best_loss = float('inf')
     epochs_no_improve = 0
 
+    print(f"Training {model_name} model for {num_epochs} epochs")
     for epoch in range(num_epochs):
         model.train()
         total_train = 0
@@ -138,11 +140,11 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
             best_loss = test_loss
             epochs_no_improve = 0
             torch.save(model.state_dict(), save_path)
-            print("Saved new best model")
+            print(f"Saved new best model for epoch {epoch + 1} for model {model_name}")
         else:
             epochs_no_improve += 1
             if epochs_no_improve >= patience:
-                print(f"Early stopping at epoch {epoch + 1}")
+                print(f"Early stopping at epoch {epoch + 1} for model {model_name}")
                 break
 
         # Adjust the learning rate based on the validation loss
@@ -242,6 +244,64 @@ def upload_pretrained_densenet121(pretrained_model, add_layers=True, n_labels=1,
 
     return pretrained_model
 
+
+def upload_stacked_models(n_labels=1, freeze_layers=True):
+    """
+    Create a stacked model using DenseNet169 and MobileNetV2 as base models.
+
+    Parameters:
+    - n_labels: Number of output labels (classes).
+    - freeze_layers: Boolean indicating whether to freeze the original layers.
+
+    Returns:
+    - The stacked model.
+    """
+    class StackedModel(nn.Module):
+        def __init__(self, n_labels, freeze_layers):
+            super(StackedModel, self).__init__()
+            self.base_model1 = models.densenet169(pretrained=True)
+            self.base_model2 = models.mobilenet_v2(pretrained=True)
+
+            if freeze_layers:
+                for param in self.base_model1.parameters():
+                    param.requires_grad = False
+                for param in self.base_model2.parameters():
+                    param.requires_grad = False
+
+            self.base_model1.classifier = nn.Identity()
+            self.base_model2.classifier = nn.Identity()
+
+            self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+            self.fc = nn.Sequential(
+                nn.Linear(1664 + 1280, 512),
+                nn.ReLU(),
+                nn.Dropout(0.5),
+                nn.Linear(512, 256),
+                nn.ReLU(),
+                nn.Dropout(0.5),
+                nn.Linear(256, 128),
+                nn.ReLU(),
+                nn.Dropout(0.5),
+                nn.Linear(128, n_labels),
+                nn.Sigmoid()
+            )
+
+        def forward(self, x):
+            x1 = self.base_model1.features(x)
+            x1 = self.global_avg_pool(x1)
+            x1 = torch.flatten(x1, 1)
+
+            x2 = self.base_model2.features(x)
+            x2 = self.global_avg_pool(x2)
+            x2 = torch.flatten(x2, 1)
+
+            x = torch.cat((x1, x2), dim=1)
+            x = self.fc(x)
+            return x
+
+    model = StackedModel(n_labels, freeze_layers)
+    return model
+
 def save_model(model, filename):
     """
     Save a PyTorch model to a file using pickle and onnx.
@@ -321,6 +381,17 @@ def predict_model(model, loader, device='cuda'):
 
 # Function to plot ROC curve
 def plot_roc_curve(labels, preds, model_name):
+    """
+    Plot the ROC curve for the given model.
+
+    Parameters:
+    - labels: Numpy array of true labels.
+    - preds: Numpy array of predicted probabilities.
+    - model_name: Name of the model.
+
+    Returns:
+    - None
+    """
     class_names = get_class_names()
     plt.figure(figsize=(10, 8))
     for i, class_name in enumerate(class_names):
