@@ -152,6 +152,9 @@ def get_datasets(zip_path='chexpert.zip'):
     policies = get_policies()
     class_names = get_class_names()
 
+    # Select the policy to handle uncertain labels (-1)
+    # We started with mixed policy which changed -1  to 0 but got bad results so switched to ones policy
+    # which changes -1 to 1
     selected_policy = policies[0]
 
     # Split the original training data into separate training 
