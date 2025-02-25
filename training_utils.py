@@ -349,10 +349,8 @@ def load_model(filename, device='cuda'):
     - The loaded PyTorch model.
     """
     path = f"finetuned_models/{filename}"
-    with open(path, 'rb') as f:
-        loaded_model = pickle.load(f)
-
-    return loaded_model.to(device)
+    loaded_model = torch.load(path, map_location=device)
+    return loaded_model
 
 
 def predict_model(model, loader, device='cuda'):
