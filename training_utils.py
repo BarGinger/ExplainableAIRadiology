@@ -42,7 +42,7 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
 
     current_dir = os.getcwd()
     save_filename = f"{model_name}.pkl"
-    save_path = os.path.join(current_dir, save_filename)
+    save_path = f"finetuned_models/{save_filename}"
 
     train_losses = []
     train_accuracies = []
@@ -150,7 +150,7 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
         # Adjust the learning rate based on the validation loss
         scheduler.step(test_loss)
 
-    save_model(model, save_filename)
+    save_model(model, model_name=model_name, device=device)
 
     return train_losses, train_accuracies, test_losses, test_accuracies, test_aucs
 
@@ -302,34 +302,38 @@ def upload_stacked_models(n_labels=1, freeze_layers=True):
     model = StackedModel(n_labels, freeze_layers)
     return model
 
-def save_model(model, filename):
+def save_model(model, model_name, device='cuda'):
     """
     Save a PyTorch model to a file using pickle and onnx.
 
     Parameters:
     - model: The PyTorch model to be saved.
-    - filename: The name of the file to save the model to.
+    - model_name: The name of the model to save.
     """
-    # Save the model using pickle
-    torch.save(model, filename)
-
     # # Save the trained model using pickle
     # with open(filename, 'wb') as f:
     #     pickle.dump(model, f)
 
-    print(f"Model pickled as {filename}")
+    pickle_path = f"finetuned_models/{model_name}.pkl"
+    print(f"Model pickled saved in {pickle_path}")
+    # Save the model using pickle
+    torch.save(model, pickle_path)
+
+    pth_path = f"finetuned_models/{model_name}.pth"
+    print(f"Model pth saved in {pth_path}")
+    torch.save(model.state_dict(), pth_path) 
 
     # Define dummy input for ONNX export (batch size 1, 3 channels, 224x224 image size)
     dummy_input = torch.randn(1, 3, 224, 224).to(device)  # Move dummy input to GPU
 
     # Export the model to ONNX format
-    onnx_filename = filename.replace('.pkl', '.onnx')
-    torch.onnx.export(model, dummy_input, onnx_filename,
+    onnx_path = f"finetuned_models/{model_name}.onnx"
+    torch.onnx.export(model, dummy_input, onnx_path,
                     input_names=["input"],
                     output_names=["output"],
                     opset_version=11)
 
-    print(f"Model saved as {onnx_filename}")
+    print(f"Model saved as onnx in {onnx_path}")
 
 
 def load_model(filename, device='cuda'):
@@ -344,7 +348,8 @@ def load_model(filename, device='cuda'):
     Returns:
     - The loaded PyTorch model.
     """
-    with open(filename, 'rb') as f:
+    path = f"finetuned_models/{filename}"
+    with open(path, 'rb') as f:
         loaded_model = pickle.load(f)
 
     return loaded_model.to(device)
