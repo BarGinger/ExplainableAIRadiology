@@ -65,7 +65,7 @@ class StackedModel(nn.Module):
     
 
 # Grad-CAM implementation
-def apply_gradcam(model, image_path, transform, target_layers):
+def apply_gradcam_stacked_densenet_mobilenet(model, image_path, transform):
     """
     Apply Grad-CAM to the specified image using the provided model.
     
@@ -82,6 +82,9 @@ def apply_gradcam(model, image_path, transform, target_layers):
     model.eval()
     for param in model.parameters():
         param.requires_grad = True
+
+    target_layers = [model.base_model1.features.denseblock4.denselayer32, model.base_model2.features[-1][0]]
+
 
     img = Image.open(image_path).convert('RGB')
     original_img = np.array(img, dtype=np.float32) / 255.0
