@@ -1,6 +1,13 @@
 import torch
 import torch.nn as nn
-import torchvision.models as models
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+from torchvision import transforms
+from PIL import Image
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
 
 class StackedModel(nn.Module):
     def __init__(self, n_labels, freeze_layers):
@@ -55,6 +62,46 @@ class StackedModel(nn.Module):
         x = torch.cat((x1, x2), dim=1)
         x = self.fc(x)
         return x
+    
+
+# Grad-CAM implementation
+def apply_gradcam(model, image_path, transform, target_layers):
+    """
+    Apply Grad-CAM to the specified image using the provided model.
+    
+    Args:
+        model: The trained model.
+        image_path: Path to the image for visualization.
+        transform: Image transformation pipeline.
+        target_layers: List of target layers for Grad-CAM.
+    
+    Returns:
+        Tuple of (resized original image, Grad-CAM heatmap, overlayed image).
+    """
+
+    model.eval()
+    for param in model.parameters():
+        param.requires_grad = True
+
+    img = Image.open(image_path).convert('RGB')
+    original_img = np.array(img, dtype=np.float32) / 255.0
+
+    input_tensor = transform(img).unsqueeze(0)
+
+    cam = GradCAM(model=model, target_layers=target_layers)
+
+    targets = [ClassifierOutputTarget(0)]
+
+    grayscale_cam = cam(input_tensor=input_tensor, targets=targets)[0]
+
+    if original_img.shape[:2] != grayscale_cam.shape:
+        original_img_resized = cv2.resize(original_img, (grayscale_cam.shape[1], grayscale_cam.shape[0]))
+    else:
+        original_img_resized = original_img
+
+    overlay = show_cam_on_image(original_img_resized, grayscale_cam, use_rgb=True)
+
+    return original_img_resized, overlay
 
 def upload_stacked_models(n_labels=1, freeze_layers=True):
     """
