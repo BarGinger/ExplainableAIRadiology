@@ -171,6 +171,9 @@ def upload_pretrained_densenet169(pretrained_model, add_layers=True, n_labels=1,
         for param in pretrained_model.parameters():
             param.requires_grad = False
 
+    # Modify the first convolutional layer to accept 1-channel input for DenseNet169
+    pretrained_model.features.conv0 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+
     if add_layers:
         in_features = pretrained_model.classifier.in_features
         pretrained_model.classifier = nn.Sequential(
