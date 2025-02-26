@@ -35,18 +35,39 @@ def prepare_dataset(dataframe, policy, class_names):
     - x_path: Numpy array of image paths.
     - y: Numpy array of labels corresponding to the class names.
     """
+
+    
+    # Count the occurrences of each unique value in the "Pleural Effusion" column
+    pleural_effusion_counts = dataframe['Pleural Effusion'].value_counts()
+
+    # Print the counts for each class
+    print(f"in dataframe Count for each class:\n{pleural_effusion_counts}")
+
+
     # Filter the dataset to include only frontal images
     dataset_df = dataframe[dataframe['Frontal/Lateral'] == 'Frontal']
+
+    dataset_df = dataset_df.dropna(subset=['Pleural Effusion'])
+
+     # Count the occurrences of each unique value in the "Pleural Effusion" column
+    pleural_effusion_counts = dataset_df['Pleural Effusion'].value_counts()
+
+    # Print the counts for each class
+    print(f"in dataset_df (only Frontal) Count for each class:\n{pleural_effusion_counts}")
     
-    # Shuffle the dataset
-    df = dataset_df.sample(frac=1., random_state=1)
+    # # Shuffle the dataset
+    # df = dataset_df.sample(frac=1., random_state=1)
     
     # Fill missing values with zeros
-    df.fillna(0, inplace=True)
+    # df.fillna(0, inplace=True)
     
     # Extract image paths and labels
-    x_path = df["Path"].to_numpy()
-    y_df = df[class_names]
+    x_path = dataset_df["Path"].to_numpy()
+    y_df = dataset_df[class_names]
+
+    # Count the occurrences of each unique value in the "Pleural Effusion" column
+    pleural_effusion_counts = y_df.value_counts()
+    print(f"in y_df Count for each class:\n{pleural_effusion_counts}")
     
     # Define classes to be treated as ones in the "mixed" policy
     class_ones = ['Atelectasis', 'Cardiomegaly']
@@ -82,6 +103,17 @@ def prepare_dataset(dataframe, policy, class_names):
         
         # Assign the labels to the corresponding row in the labels array
         y[i] = labels
+
+    # Assuming y is a numpy array
+    # Flatten the y array
+    y_flattened = y.flatten()
+
+    # Convert the flattened array to a pandas Series
+    y_series = pd.Series(y_flattened)
+
+    # Get the value counts of each unique value
+    pleural_effusion_counts = y_series.value_counts()
+    print(f"in y (labels) Count for each class:\n{pleural_effusion_counts}")
     
     return x_path, y
 
@@ -149,6 +181,12 @@ def get_datasets(zip_path='chexpert.zip'):
     # Read the training and validation data from the zip file
     original_train_df, test_df = read_zip(zip_path=zip_path)
 
+    # Count the occurrences of each unique value in the "Pleural Effusion" column
+    pleural_effusion_counts = original_train_df['Pleural Effusion'].value_counts()
+
+    # Print the counts for each class
+    print(f"in original_train_df Count for each class:\n{pleural_effusion_counts}")
+
     policies = get_policies()
     class_names = get_class_names()
 
@@ -187,6 +225,7 @@ def read_zip(zip_path='chexpert.zip'):
 def get_transform(augment=False):
     # Define the transformation pipeline for the images
     transform_list = [
+        # transforms.Grayscale(num_output_channels=1),  # Convert images to grayscale
         transforms.Resize((224, 224)),  # Resize images to 224x224 pixels
         transforms.ToTensor(),          # Convert images to PyTorch tensors
         transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize grayscale images

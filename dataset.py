@@ -64,7 +64,7 @@ class CheXpertDataset(Dataset):
         #   FOLDER = "" # Or handle the case where the directory doesn't exist
         FOLDER = ""
         img_path = FOLDER + img_path
-        image = Image.open(img_path).convert('RGB')  #rgb format
+        image = Image.open(img_path).convert('L') # Convert to gray scalse   .convert('RGB')  #rgb format
         labels = self.dataframe.iloc[idx][self.class_names].values.astype('float32')  # astype float32 otherwise error
         labels = torch.tensor(labels, dtype=torch.float32)
 

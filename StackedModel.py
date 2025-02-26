@@ -7,13 +7,23 @@ class StackedModel(nn.Module):
         super(StackedModel, self).__init__()
         self.base_model1 = models.mobilenet_v2(pretrained=True)
         self.base_model2 = models.densenet169(pretrained=True)
-        
 
+        # Modify the first convolutional layer to accept 1-channel input for MobileNetV2
+        self.base_model1.features[0] = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False)
+
+        # Modify the first convolutional layer to accept 1-channel input for DenseNet169
+        self.base_model2.features.conv0 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        
         if freeze_layers:
             for param in self.base_model1.parameters():
                 param.requires_grad = False
             for param in self.base_model2.parameters():
                 param.requires_grad = False
+
+        
+        # # Ensure the modified first layers are not frozen
+        # self.base_model1.features[0][0].weight.requires_grad = True
+        # self.base_model2.features.conv0.weight.requires_grad = True
 
         self.base_model1.classifier = nn.Identity()
         self.base_model2.classifier = nn.Identity()
