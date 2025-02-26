@@ -324,7 +324,7 @@ def save_model(model, model_name, device='cuda'):
     torch.save(model.state_dict(), pth_path) 
 
     # Define dummy input for ONNX export (batch size 1, 3 channels, 224x224 image size)
-    dummy_input = torch.randn(1, 3, 224, 224).to(device)  # Move dummy input to GPU
+    dummy_input = torch.randn(1, 1, 224, 224).to(device)  # Move dummy input to GPU
 
     # Export the model to ONNX format
     onnx_path = f"finetuned_models/{model_name}.onnx"
