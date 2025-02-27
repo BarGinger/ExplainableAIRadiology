@@ -225,7 +225,7 @@ def read_zip(zip_path='chexpert.zip'):
 def get_transform(augment=False):
     # Define the transformation pipeline for the images
     transform_list = [
-        # transforms.Grayscale(num_output_channels=1),  # Convert images to grayscale
+        transforms.Grayscale(num_output_channels=1),  # Convert images to grayscale
         transforms.Resize((224, 224)),  # Resize images to 224x224 pixels
         transforms.ToTensor(),          # Convert images to PyTorch tensors
         transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize grayscale images

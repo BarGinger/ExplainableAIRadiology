@@ -154,7 +154,47 @@ def train_model(model, train_loader: DataLoader, test_loader: DataLoader, criter
 
     return train_losses, train_accuracies, test_losses, test_accuracies, test_aucs
 
-def upload_pretrained_densenet169(pretrained_model, add_layers=True, n_labels=1, freeze_layers=True):
+# def upload_pretrained_densenet169(pretrained_model, add_layers=True, n_labels=1, freeze_layers=True):
+#     """
+#     Modify a pre-trained model by adding custom layers and optionally freezing the original layers.
+
+#     Parameters:
+#     - pretrained_model: The pre-trained model to be modified.
+#     - add_layers: Boolean indicating whether to add custom layers.
+#     - n_labels: Number of output labels (classes).
+#     - freeze_layers: Boolean indicating whether to freeze the original layers.
+
+#     Returns:
+#     - The modified model.
+#     """
+#     if freeze_layers:
+#         for param in pretrained_model.parameters():
+#             param.requires_grad = False
+
+#     # Modify the first convolutional layer to accept 1-channel input for DenseNet169
+#     pretrained_model.features.conv0 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+
+#     if add_layers:
+#         in_features = pretrained_model.classifier.in_features
+#         pretrained_model.classifier = nn.Sequential(
+#             nn.Linear(in_features, 512),
+#             nn.ReLU(),
+#             nn.Dropout(0.3),
+#             nn.Linear(512, 256),
+#             nn.ReLU(),
+#             nn.Dropout(0.3),
+#             nn.Linear(256, 128),
+#             nn.ReLU(),
+#             nn.Dropout(0.3),
+#             nn.Linear(128, 64),
+#             nn.ReLU(),
+#             nn.Dropout(0.3),
+#             nn.Linear(64, n_labels)
+#         )
+
+#     return pretrained_model
+
+def upload_pretrained_densenet169(pretrained_model, add_layers=True, n_labels=1, freeze_layers=True, unfreeze_modules=['features.denseblock4']):
     """
     Modify a pre-trained model by adding custom layers and optionally freezing the original layers.
 
@@ -163,17 +203,30 @@ def upload_pretrained_densenet169(pretrained_model, add_layers=True, n_labels=1,
     - add_layers: Boolean indicating whether to add custom layers.
     - n_labels: Number of output labels (classes).
     - freeze_layers: Boolean indicating whether to freeze the original layers.
+    - unfreeze_layers: List of layer names or indices to unfreeze (e.g., 'features.denseblock4' or [6, 7] for certain blocks).
 
     Returns:
     - The modified model.
     """
+    
+    # Step 1: Freeze all layers
     if freeze_layers:
         for param in pretrained_model.parameters():
             param.requires_grad = False
 
-    # Modify the first convolutional layer to accept 1-channel input for DenseNet169
+    # Step 2: Unfreeze specific layers (if specified)
+    if unfreeze_modules:
+        for name, child in pretrained_model.named_modules():
+            # Unfreeze layers based on the name of the block (e.g., 'features.denseblock4')
+            if any(layer_name in name for layer_name in unfreeze_modules):
+                # print('Works')
+                for param in child.parameters():
+                    param.requires_grad = True
+    
+    # Step 3: Modify the first convolutional layer to accept 1-channel input for DenseNet169
     pretrained_model.features.conv0 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
+    # Step 4: Add custom layers if specified
     if add_layers:
         in_features = pretrained_model.classifier.in_features
         pretrained_model.classifier = nn.Sequential(
