@@ -241,7 +241,10 @@ def get_transform(augment=False):
             transforms.RandomHorizontalFlip(),
             transforms.RandomRotation(10),
             transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+            transforms.RandomVerticalFlip(),  # Randomly flip the image vertically
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # Randomly translate the image
+            transforms.RandomPerspective(distortion_scale=0.2, p=0.5)  # Apply random perspective transformation
         ]
         transform_list = augmentations + transform_list
     

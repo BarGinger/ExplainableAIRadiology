@@ -310,3 +310,4 @@ zeromq
 zipp
 zlib
 zstd
+pytorch_grad_cam
